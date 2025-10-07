@@ -12,6 +12,11 @@ services:
       - "./conf.d:/etc/mysql/conf.d:ro"
     networks:
       - petclinic-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppetclinic"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   petclinic:
     image: openjdk:17-slim
@@ -22,7 +27,8 @@ services:
     working_dir: /app
     command: java -jar spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=mysql
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/petclinic
@@ -30,6 +36,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=petclinic
     networks:
       - petclinic-network
+    restart: on-failure
 
 networks:
   petclinic-network:
