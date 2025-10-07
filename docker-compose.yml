@@ -14,9 +14,10 @@ services:
       - petclinic-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppetclinic"]
-      interval: 5s
+      interval: 3s
       timeout: 3s
-      retries: 10
+      retries: 20
+      start_period: 30s
 
   petclinic:
     image: openjdk:17-slim
@@ -25,18 +26,27 @@ services:
     volumes:
       - "./target:/app"
     working_dir: /app
-    command: java -jar spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar
+    command: >
+      bash -c "
+      echo 'Waiting for MySQL to be ready...';
+      while ! nc -z mysql 3306; do
+        echo 'MySQL not ready yet, waiting...';
+        sleep 3;
+      done;
+      echo 'MySQL is up! Starting application...';
+      java -jar spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar
+      "
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     environment:
       - SPRING_PROFILES_ACTIVE=mysql
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/petclinic
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/petclinic?useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=petclinic
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     networks:
       - petclinic-network
-    restart: on-failure
+    restart: on-failure:3
 
 networks:
   petclinic-network:
