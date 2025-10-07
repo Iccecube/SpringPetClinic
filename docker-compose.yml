@@ -1,9 +1,36 @@
-mysql:
-  image: mysql:5.7
-  ports:
-    - "3306:3306"
-  environment:
-    - MYSQL_ROOT_PASSWORD=petclinic
-    - MYSQL_DATABASE=petclinic
-  volumes:
-    - "./conf.d:/etc/mysql/conf.d:ro"
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=petclinic
+      - MYSQL_DATABASE=petclinic
+    volumes:
+      - "./conf.d:/etc/mysql/conf.d:ro"
+    networks:
+      - petclinic-network
+
+  petclinic:
+    image: openjdk:17-slim
+    ports:
+      - "8086:8080"
+    volumes:
+      - "./target:/app"
+    working_dir: /app
+    command: java -jar spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar
+    depends_on:
+      - mysql
+    environment:
+      - SPRING_PROFILES_ACTIVE=mysql
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/petclinic
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=petclinic
+    networks:
+      - petclinic-network
+
+networks:
+  petclinic-network:
+    driver: bridge
