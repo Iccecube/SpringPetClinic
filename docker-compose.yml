@@ -1,53 +1,8 @@
-version: '3.8'
-services:
-  mysql:
-    image: mysql:5.7
-    ports:
-      - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=petclinic
-      - MYSQL_DATABASE=petclinic
-    volumes:
-      - "./conf.d:/etc/mysql/conf.d:ro"
-    networks:
-      - petclinic-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppetclinic"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
-  petclinic:
-    image: openjdk:17-slim
-    ports:
-      - "8086:8080"
-    volumes:
-      - "./target:/app"
-    working_dir: /app
-    command: >
-      bash -c "
-      echo 'Waiting for MySQL to be ready...';
-      until (echo > /dev/tcp/mysql/3306) >/dev/null 2>&1; do
-        echo 'MySQL not ready yet, waiting...';
-        sleep 3;
-      done;
-      echo 'MySQL is up! Starting application...';
-      java -jar spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar
-      "
-    depends_on:
-      mysql:
-        condition: service_healthy
-    environment:
-      - SPRING_PROFILES_ACTIVE=mysql
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/petclinic?useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=petclinic
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-    networks:
-      - petclinic-network
-    restart: on-failure:3
-
-networks:
-  petclinic-network:
-    driver: bridge
+image: mysql:5.7
+  ports:
+    - "3306:3306"
+  environment:
+    - MYSQL_ROOT_PASSWORD=petclinic
+    - MYSQL_DATABASE=petclinic
+  volumes:
+    - "./conf.d:/etc/mysql/conf.d:ro"
