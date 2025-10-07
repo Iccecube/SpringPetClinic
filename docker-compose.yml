@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   mysql:
     image: mysql:5.7
@@ -14,9 +13,9 @@ services:
       - petclinic-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppetclinic"]
-      interval: 3s
-      timeout: 3s
-      retries: 20
+      interval: 5s
+      timeout: 5s
+      retries: 10
       start_period: 30s
 
   petclinic:
@@ -29,7 +28,7 @@ services:
     command: >
       bash -c "
       echo 'Waiting for MySQL to be ready...';
-      while ! nc -z mysql 3306; do
+      until (echo > /dev/tcp/mysql/3306) >/dev/null 2>&1; do
         echo 'MySQL not ready yet, waiting...';
         sleep 3;
       done;
@@ -37,7 +36,8 @@ services:
       java -jar spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar
       "
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=mysql
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/petclinic?useSSL=false&allowPublicKeyRetrieval=true
